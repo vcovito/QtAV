@@ -30,14 +30,48 @@
 
 namespace QtAV {
 
+    RendererHelper::RendererHelper(QObject* parent)
+        :QObject(parent),renderer(0)
+    {
+        /*
+        if (thread() != qApp->thread()) {
+            moveToThread(qApp->thread());
+        }
+        */
+    }
+
+    void RendererHelper::setRenderer(VideoRenderer* renderer)
+    {
+        this->renderer = renderer;
+    }
+
+    void RendererHelper::scheduleWrite(const QByteArray& data, int width, int height)
+    {
+        qApp->postEvent(this, new QEvent(QEvent::User));
+    }
+
+    bool RendererHelper::event(QEvent* e)
+    {
+        if (e->type() == QEvent::User) {
+            e->accept();
+            //TODO: SWScale, new event class
+            //renderer->write(
+            return true;
+       }
+       return false;
+    }
+
+
 VideoRenderer::VideoRenderer()
     :AVOutput(*new VideoRendererPrivate)
 {
+    d_func().helper->setRenderer(this);
 }
 
 VideoRenderer::VideoRenderer(VideoRendererPrivate &d)
     :AVOutput(d)
 {
+    d_func().helper->setRenderer(this);
 }
 
 VideoRenderer::~VideoRenderer()

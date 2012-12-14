@@ -20,17 +20,35 @@
 #define QAV_VIDEORENDERER_P_H
 
 #include <private/AVOutput_p.h>
+#include <QtCore/QObject>
 
 namespace QtAV {
 
+class VideoRenderer;
+class RendererHelper : public QObject
+{
+    Q_OBJECT
+public:
+    RendererHelper(QObject* parent = 0);
+    void setRenderer(VideoRenderer *renderer);
+    void scheduleWrite(const QByteArray& data, int width, int height);
+
+protected:
+    virtual bool event(QEvent* e);
+
+    VideoRenderer *renderer;
+};
+
+//DPTR_Q
 class EventFilter;
 class Q_EXPORT VideoRendererPrivate : public AVOutputPrivate
 {
 public:
-    VideoRendererPrivate():width(480),height(320),event_filter(0) {}
+    VideoRendererPrivate():width(480),height(320),event_filter(0),helper(new RendererHelper) {}
     virtual ~VideoRendererPrivate(){}
     int width, height;
     EventFilter *event_filter;
+    RendererHelper *helper;
 };
 
 } //namespace QtAV
