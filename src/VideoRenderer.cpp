@@ -143,7 +143,7 @@ void VideoRenderer::resizeVideo(int width, int height)
         return;
 #if SCALE_VIDEO_THREAD
     if (d.dec) {
-        static_cast<VideoDecoder*>(d.dec)->resizeVideo(width, height);
+        //static_cast<VideoDecoder*>(d.dec)->resizeVideo(width, height);
     }
 #endif //SCALE_VIDEO_THREAD
     d.width = width;

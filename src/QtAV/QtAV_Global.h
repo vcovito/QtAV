@@ -20,7 +20,7 @@
 #ifndef QTAV_GLOBAL_H
 #define QTAV_GLOBAL_H
 
-#define SCALE_VIDEO_THREAD 0
+#define SCALE_VIDEO_THREAD 1
 
 #include <qglobal.h>
 #include <dptr.h>

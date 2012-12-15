@@ -93,6 +93,7 @@ void VideoThread::run()
 #else
         if (d.dec->decode(pkt.data)) {
             if (d.writer) {
+                static_cast<VideoRenderer*>(d.writer)->setSourceSize(dec->width(), dec->height());
                 d.writer->write(d.dec->data());
             }
         }
