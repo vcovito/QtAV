@@ -45,12 +45,29 @@ int ImageRenderer::write(const QByteArray &data)
     //qDebug("%s", __PRETTY_FUNCTION__);
     DPTR_D(ImageRenderer);
     tryPause();
+#if SCALE_VIDEO_THREAD
     //picture.data[0]
 #if QT_VERSION >= QT_VERSION_CHECK(4, 0, 0)
     d.image = QImage((uchar*)data.data(), d.width, d.height, QImage::Format_RGB32);
 #else
     d.image = QImage((uchar*)data.data(), d.width, d.height, 16, NULL, 0, QImage::IgnoreEndian);
 #endif
+#else
+#if USE_SWSCALE //swscale eats cpu
+    d.conv.setSourceSize(d.src_width, d.src_height);
+    d.conv.setTargetSize(d.width, d.height);
+    //check isNull()?
+    if (d.image.width() != d.width || d.image.height() != d.height)
+        d.image = QImage(d.width, d.height, QImage::Format_RGB32);
+    d.conv.scale(data.constData(), d.image.bits());
+#else
+#if QT_VERSION >= QT_VERSION_CHECK(4, 0, 0)
+    d.image = QImage((uchar*)data.data(), d.src_width, d.src_height, QImage::Format_RGB32);
+#else
+    d.image = QImage((uchar*)data.data(), d.src_width, d.src_height, 16, NULL, 0, QImage::IgnoreEndian);
+#endif //QT_VERSION
+#endif //USE_SWSCALE
+#endif //SCALE_VIDEO_THREAD
     return data.size();
 }
 

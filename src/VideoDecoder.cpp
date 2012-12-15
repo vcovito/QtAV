@@ -22,6 +22,12 @@
 #include <QtAV/QtAV_Compat.h>
 #include <QtCore/QSize>
 
+//FIXME: src format=>YUV420P=>RGB32 cause some color inverted, e.g. green and red, why?
+#if !SCALE_VIDEO_THREAD
+#undef PIX_FMT
+#define PIX_FMT PIX_FMT_RGB32 //PIX_FMT_YUV420P
+#endif
+
 namespace QtAV {
 
 class VideoDecoderPrivate : public AVDecoderPrivate
@@ -76,14 +82,22 @@ bool VideoDecoder::decode(const QByteArray &encoded)
             );
     */
 
-
+    if (d.width <= 0 || d.height <= 0) {
+        qDebug("decoded video size not seted. use original size [%d x %d]"
+               , d.codec_ctx->width, d.codec_ctx->height);
+        if (!d.codec_ctx->width || !d.codec_ctx->height)
+            return false;
+        resizeVideo(d.codec_ctx->width, d.codec_ctx->height);
+    }
+    //decoder: codec context format=>YUV420P
+    //renderer: YUV420P=>RGB32
     d.sws_ctx = sws_getCachedContext(d.sws_ctx
             , d.codec_ctx->width, d.codec_ctx->height, d.codec_ctx->pix_fmt
             , d.width, d.height, d.pix_fmt
             , (d.width == d.codec_ctx->width && d.height == d.codec_ctx->height) ? SWS_POINT : SWS_BICUBIC
             , NULL, NULL, NULL
             );
-    
+
     int v_scale_result = sws_scale(
             d.sws_ctx,
             d.frame->data,
@@ -111,7 +125,10 @@ void VideoDecoder::resizeVideo(int width, int height)
         return;
 
     DPTR_D(VideoDecoder);
-
+    /*???
+    width = !(width % 8) ? width : width + 8 - (width % 8);
+    height = !(height % 2) ? height : height + 1;
+    */
     int bytes = avpicture_get_size(PIX_FMT, width, height);
     if(d.decoded.size() < bytes) {
         d.decoded.resize(bytes);
@@ -129,4 +146,13 @@ void VideoDecoder::resizeVideo(int width, int height)
     d.height = height;
 }
 
+int VideoDecoder::width() const
+{
+    return d_func().width;
+}
+
+int VideoDecoder::height() const
+{
+    return d_func().height;
+}
 } //namespace QtAV

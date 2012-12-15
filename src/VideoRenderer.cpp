@@ -21,7 +21,7 @@
 #include <private/VideoRenderer_p.h>
 #include <QtCore/QCoreApplication>
 #include <QtAV/EventFilter.h>
-
+#include <QtAV/ImageConvert.h>
 /*!
     EZX:
     PIX_FMT_BGR565, 16bpp,
@@ -30,36 +30,61 @@
 
 namespace QtAV {
 
-    RendererHelper::RendererHelper(QObject* parent)
-        :QObject(parent),renderer(0)
+class RenderEvent : public QEvent
+{
+public:
+    RenderEvent(const QByteArray& data, int width, int height)
+        :QEvent(registeredType()),w(width),h(height),decoded_data(data)
+    {}
+
+    int width() const { return w; }
+    int height() const { return h;}
+    QByteArray decodedData() const { return decoded_data; }
+
+    static Type registeredType()
     {
-        /*
-        if (thread() != qApp->thread()) {
-            moveToThread(qApp->thread());
-        }
-        */
+        static Type EventType = static_cast<Type>(registerEventType());
+        return EventType;
     }
 
-    void RendererHelper::setRenderer(VideoRenderer* renderer)
-    {
-        this->renderer = renderer;
-    }
+private:
+    int w, h;
+    QByteArray decoded_data;
+};
 
-    void RendererHelper::scheduleWrite(const QByteArray& data, int width, int height)
-    {
-        qApp->postEvent(this, new QEvent(QEvent::User));
+RendererHelper::RendererHelper(QObject* parent)
+    :QObject(parent),renderer(0)
+{
+    /*
+    if (thread() != qApp->thread()) {
+        moveToThread(qApp->thread());
     }
+    */
+}
 
-    bool RendererHelper::event(QEvent* e)
-    {
-        if (e->type() == QEvent::User) {
-            e->accept();
-            //TODO: SWScale, new event class
-            //renderer->write(
-            return true;
-       }
-       return false;
-    }
+void RendererHelper::setRenderer(VideoRenderer* renderer)
+{
+    this->renderer = renderer;
+}
+
+void RendererHelper::scheduleWrite(const QByteArray& data, int width, int height)
+{
+    qApp->postEvent(this, new RenderEvent(data, width, height));
+}
+
+bool RendererHelper::event(QEvent* e)
+{
+    if (e->type() == RenderEvent::registeredType()) {
+        RenderEvent *event = static_cast<RenderEvent*>(e);
+        event->accept();
+        //all in the same thread(main) en sure size is right to QImage:
+        //scale to renderer size=>write to renderer
+        renderer->setSourceSize(event->width(), event->height());
+        renderer->write(event->decodedData());
+        return true;
+   }
+   return false;
+}
 
 
 VideoRenderer::VideoRenderer()
@@ -76,6 +101,18 @@ VideoRenderer::VideoRenderer(VideoRendererPrivate &d)
 
 VideoRenderer::~VideoRenderer()
 {
+}
+
+void VideoRenderer::setSourceSize(int width, int height)
+{
+    DPTR_D(VideoRenderer);
+    d.src_width = width;
+    d.src_height = height;
+}
+
+void VideoRenderer::scheduleWrite(const QByteArray &data, int width, int height)
+{
+    d_func().helper->scheduleWrite(data, width, height);
 }
 
 void VideoRenderer::registerEventFilter(EventFilter *filter)
@@ -104,9 +141,11 @@ void VideoRenderer::resizeVideo(int width, int height)
     DPTR_D(VideoRenderer);
     if (width == 0 || height == 0)
         return;
+#if SCALE_VIDEO_THREAD
     if (d.dec) {
         static_cast<VideoDecoder*>(d.dec)->resizeVideo(width, height);
     }
+#endif //SCALE_VIDEO_THREAD
     d.width = width;
     d.height = height;
 }

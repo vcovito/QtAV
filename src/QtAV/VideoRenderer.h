@@ -36,6 +36,10 @@ class Q_EXPORT VideoRenderer : public AVOutput
 public:
     VideoRenderer();
     virtual ~VideoRenderer() = 0;
+    //In main thread! set original image size immediatly before image scaling
+    void setSourceSize(int width, int height); //private?
+    //dispatch decoded data with original size width x height to main thread
+    void scheduleWrite(const QByteArray& data, int width, int height);
     //TODO: unregister
     virtual void registerEventFilter(EventFilter* filter);
     virtual bool open();

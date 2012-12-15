@@ -22,14 +22,22 @@
 
 #include <QtGui/QImage>
 #include <private/VideoRenderer_p.h>
+#include <QtAV/ImageConvert.h>
+#include <QtAV/QtAV_Compat.h>
 
 namespace QtAV {
 
 class Q_EXPORT ImageRendererPrivate : public VideoRendererPrivate
 {
 public:
+    ImageRendererPrivate() {
+        conv.setSourceFormat(PIX_FMT_RGB32);//PIX_FMT_YUV420P);
+        conv.setTargetFormat(PIX_FMT_RGB32);
+    }
+
     virtual ~ImageRendererPrivate(){}
     QImage image, preview;
+    ImageConvert conv;
 };
 
 } //namespace QtAV

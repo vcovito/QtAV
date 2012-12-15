@@ -32,6 +32,7 @@ SOURCES += \
     AVDemuxThread.cpp \
     EventFilter.cpp \
     GraphicsItemRenderer.cpp \
+    ImageConvert.cpp \
     ImageRenderer.cpp \
     Packet.cpp \
     AVPlayer.cpp \
@@ -66,6 +67,7 @@ HEADERS += \
     QtAV/AVDemuxThread.h \
     QtAV/BlockingQueue.h \
     QtAV/GraphicsItemRenderer.h \
+    QtAV/ImageConvert.h \
     QtAV/ImageRenderer.h \
     QtAV/Packet.h \
     QtAV/AVPlayer.h \
@@ -75,5 +77,3 @@ HEADERS += \
     QtAV/AVClock.h \
     QtAV/VideoDecoder.h \
     QtAV/VideoThread.h
-
-

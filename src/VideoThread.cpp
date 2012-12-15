@@ -20,6 +20,8 @@
 #include <private/AVThread_p.h>
 #include <QtAV/Packet.h>
 #include <QtAV/AVClock.h>
+#include <QtAV/VideoDecoder.h>
+#include <QtAV/VideoRenderer.h>
 #include <QDateTime>
 namespace QtAV {
 
@@ -45,6 +47,7 @@ void VideoThread::run()
         return;
     resetState();
     Q_ASSERT(d.clock != 0);
+    VideoDecoder *dec = static_cast<VideoDecoder*>(d.dec);
     while (!d.stop) {
         d.mutex.lock();
         if (d.packets.isEmpty() && !d.stop) {
@@ -81,11 +84,19 @@ void VideoThread::run()
             //audio packet not cleaned up?
         }
         d.clock->updateVideoPts(pkt.pts); //here?
+#if !SCALE_VIDEO_THREAD
         if (d.dec->decode(pkt.data)) {
-            if (d.writer)
-                d.writer->write(d.dec->data());
-            //qApp->processEvents(QEventLoop::AllEvents);
+            if (d.writer) {
+                static_cast<VideoRenderer*>(d.writer)->scheduleWrite(dec->data(), dec->width(), dec->height());
+            }
         }
+#else
+        if (d.dec->decode(pkt.data)) {
+            if (d.writer) {
+                d.writer->write(d.dec->data());
+            }
+        }
+#endif //SCALE_MAIN_THREAD
         d.mutex.unlock();
     }
     qDebug("Video thread stops running...");
