@@ -391,17 +391,21 @@ void AVDemuxer::dump()
         , {videoStream(),    v_codec_context, "video_stream"}
         , {0,                0,               0}
     };
+
+    
     for (int idx = 0; stream_infos[idx].name != 0; ++idx) {
-        qDebug("%s: %d", stream_infos[idx].name, stream_infos[idx].index);
+        qDebug("Stream '%s': index:%d (idx:%d)", , stream_infos[idx].name, stream_infos[idx].index, idx);
         if (stream_infos[idx].index < 0) {
-            qDebug("stream not available");
+            qDebug("stream not available: idx:%d",idx);
             continue;
         }
-        AVStream *stream = format_context->streams[idx];
+        //AVStream *stream = format_context->streams[idx];
+        AVStream *stream = format_context->streams[stream_infos[idx].index];
         if (!stream)
             continue;
         qDebug("[AVStream::start_time = %lld]", stream->start_time);
-        AVCodecContext *ctx = stream_infos[idx].ctx;
+        //AVCodecContext *ctx = stream_infos[idx].ctx;
+        AVCodecContext *ctx = stream_infos[stream_infos[idx].index].ctx;
         if (ctx) {
             qDebug("[AVCodecContext::time_base = %d, %d, %.2f %.2f]", ctx->time_base.num, ctx->time_base.den
                 ,1.0 * ctx->time_base.num / (1 + ctx->time_base.den)
